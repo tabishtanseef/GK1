@@ -1,0 +1,1 @@
+ disableHandler(document.forms.aform, 'check');

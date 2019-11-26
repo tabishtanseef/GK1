@@ -1,0 +1,258 @@
+<!DOCTYPE HTML>
+<html lang="en"  ng-app='fynseApp'>
+<head>
+	<meta charset="utf-8">
+	<title>| GK 1 | Question Paper Generator</title>
+	<script src="Script/angular.min.js"></script>	
+	<link href="http://fonts.googleapis.com/css?family=Roboto:100,100italic,300,300italic,400,400italic" rel="stylesheet" type="text/css" />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.2.61/jspdf.min.js"></script>
+	<link rel="stylesheet" href="Style/stepper.css">
+	<link rel="stylesheet" href="Style/main.css">
+	<link rel="stylesheet" href="Style/sprite.css">
+	<link rel="stylesheet" href="Style/bootstrap.min.css">
+</head>
+<body ng-controller='MainCtrl' onload="onLoad()" style="overflow:hidden;">
+
+
+<div class="savedData" ng-show='isSavedData'>
+	<div class="contentBox">
+		<label>Saved Question Paper</label><br><br>
+		<div class="versionList" ng-repeat='row in versionArray track by $index'>
+			{{row.versionName}}
+			<div class='button' ng-click='openSavedData($index)' style="position:relative; float:right; right:0px;">Open</div>
+		</div>		
+		<div class="actionGroup">
+			<div class='button' ng-click='isSavedData = false'>Start New</div>
+			<div class='button' ng-click='clearData()'>Clear</div>
+		</div>
+	</div>
+</div>
+<div class="savedData" id='savePopup'>
+	<div class="contentBox">
+		<label>Save Question Paper</label><br><br><br>
+		<input type="text" class="save-input" placeholder='Version Name' ng-model="versionName">
+		<a class='button' ng-click="saveData(versionName)">Save</a>
+		<a class='button' ng-click="cancelPopup()">Cancel</a>
+		<div class="versionList" ng-repeat='row in versionArray track by $index'>
+			{{row.versionName}}
+			<div class='button' ng-click='saveDataAs($index)' style="position:relative; float:right; right:0px;">Replace</div>
+		</div>
+	</div>
+</div>
+<div class="header">
+		<table width="100%">
+	<tr>
+		<td><img src="Image/log.png"></td>
+		<td style="text-align:center;"><h2 >Question Paper Generator</h2></td>
+		<td style="text-align:right;"><img src="Image/c_logo.png"></td>
+	</tr>
+	</table>
+  </div>
+	<div class="top-nav">
+	<h2 class="topicText" style="float:right; right:0px; margin-top:10px;">{{categoryName}}</h2>
+		<div class="container">
+          <ol>
+            <li id='step1' class="{{topNavStep==1? 'selected':''}}" ng-click="setTopNav(1)"><a>1 Chapters Selection</a></li>
+            <li class="{{topNavStep==2? 'selected':''}} {{selectedTotal()<1? 'disabled':''}}" ng-click="setTopNav(2)"><a>2 Allocate Marks</a></li>
+            <li class="{{topNavStep==3? 'selected':''}} {{topNavStep!=2? 'disabled':''}}" ng-click="setTopNav(3)"><a>3 Preview Question Paper</a></li>
+          </ol>
+        </div>
+	</div>
+	<div class="content left-menu">
+		<div class="title">
+      <input type = "checkbox"  ng-click = "selectAllModule(checked == true ? false : true)" style="position:relative; top:4px; cursor: pointer; cursor: hand; width:35px; height:30px;" ng-model = "checked" >	
+			<div class="totalQstCount {{selectedTotal()== 0 ? 'hide':'show'}}" >{{selectedTotal()}}</div>
+		</div>
+		<div class="content-scroll">
+			<ul>
+				<li ng-repeat="Row in Chapter" 
+					class="{{Chapter.indexOf(Row)==selectedChapter?'selected':''}}"
+					ng-click="setChapter(Chapter.indexOf(Row));">
+					<a>{{Row['-ChapterName']}}</a><div class="ordinal {{selected(Chapter.indexOf(Row))== 0 ? 'hide':'show'}}">{{selected(Chapter.indexOf(Row))}}</div>
+				</li>
+			</ul>
+		</div>
+    </div>
+	<div class="content question-selection">
+	    <input type = "checkbox"  ng-click = "selectAll(selectedChapter,unchecked == true ? false : true)" style="position:fixed; float:left; left:310px; top:200px; cursor: pointer; cursor: hand; width:35px; height:30px;" ng-model = "unchecked" >	
+		<div class="center">
+		<pre>{{Chapter[selectedChapter]['-ChapterName']}}</pre>												
+		</div>
+		<div class="content-scroll">
+			<ul>
+				<li class="group-li" ng-repeat="Cluster in Chapter[selectedChapter]['Cluster']">
+					<div class="label">{{Cluster['-Heading']}}</div>                   		
+					<ul>
+						<li class='item-li {{item.selected}}' ng-repeat="item in Cluster['item']" ng-click="setQuestionSelected(item)">
+							<table>
+								<tbody>
+									<tr>
+										<!--<td valign="top" width="20">{{Cluster['item'].indexOf(item)+1}}.</td>-->
+										<td><pre>{{item['-Question']}}</pre><br>										
+										<img ng-show="item['-OptionImage']!=null" style="margin-top:14px" src="QuestionImages/{{item['-OptionImage']}}">								     	
+										</td>
+									</tr>		
+								</tbody>
+							</table>
+						</li>
+					</ul>
+				</li>
+			</ul>
+		</div>
+    </div>
+    <div class="content allocate-marks">
+    	<div class="title">
+    		<div class="table-holder">
+    			<div class="child1">Mark Allocation</div>
+    			<div class="child2">Number of Question</div>
+    			<div class="child2">Marks per Question</div>
+    			<div class="child2">Sub Total</div>
+    		</div>
+    	</div>
+	    	
+    	<div class="allocate-marks-content">
+	    	<ul>
+				<li ng-repeat="Row in sellectedArr">
+					<div class="table-holder">
+			    		<div class="child1">{{Row.Cluster}}</div>
+			    		
+			    		<div class="child2">
+			    			<input class="spinner" min="1" type='number' ng-model="Row.selQuestions" max={{Row.Questions.length}}>
+			    		</div>
+			    		<div class="child2">
+			    			<input class="spinner" min="1" type='number' ng-model="Row.DefaultMark" >
+			    		</div>
+			    		<div class="child2">
+			    			<input class="spinner" ng-readonly="true" value="{{Row.DefaultMark*Row.selQuestions}}">
+			    		</div>
+			    	</div>
+				</li>
+			</ul>
+			<div class="grandTotalHolder"><div class="grandTotal">Total Marks<a>{{getGrandTotal()}}</a></div></div>
+		</div>
+	</div>
+	<div class="question-preview">
+		<div class="question-preview-tools">
+		</div>
+		<div id="printable" class="printable">
+	    	<div class="question-preview-holder">
+	    		<div class="question-preview-header">
+	    			<img class='questionPaperlogoImage' id='question-paper-logo' src="Image/School-logo.png">
+    				<a class="titleText">{{SchoolName}}</a>
+	    		</div>
+	    		<ul>
+					<li class='group-li' ng-repeat="Row in sellectedArr">
+						<div class="label">
+							<div class='static-text-preview' style="font-size:25px;">{{Row.Cluster}}</div>
+							<a class="marks-preview" style="font-size:25px;">{{Row.DefaultMark*Row.selQuestions}} Marks</a>
+							</div>
+						<ul>
+							<li style="padding-top:{{questionPadding}}px;padding-bottom:{{questionPadding}}px;" class="item-li {{Row['Questions'].indexOf(item)>=Row.selQuestions ? 'remove':''}}" ng-repeat="item in Row['Questions']">
+								<table><tbody>
+									<tr>
+										<!--<td valign="top" width="20"><div class='number'>{{Row['Questions'].indexOf(item)+1}}.</div></td>-->
+										<td>
+											<div class="question" style="font-size:22px;"><pre>{{item['Question']}}</pre></div>
+											<img width="500" style="margin-top:14px display:{{item['OptionImage']==null?'none':'block'}}" ng-show="item['OptionImage']!=null" src="QuestionImages/{{item['OptionImage']}}">											
+										</td>
+									</tr>
+								</tbody></table>
+							</li>
+						</ul>
+					</li>
+				</ul>
+	    	</div>
+	    </div>
+    </div>
+	<div class="question-preview">
+		<div class="question-preview-tools">
+		</div>
+		<div id="accessable" class="printable">
+	    	<div class="question-preview-holder">
+	    		<div class="question-preview-header">
+	    			<img class='questionPaperlogoImage' id='question-pap-logo' src="Image/School-logo.png">
+    				<a class="titleText">{{SchoolName}}</a>
+	    		</div>
+	    		<ul>
+					<li class='group-li' ng-repeat="Row in sellectedArr">
+						<div class="label">
+							<div class='static-text-preview'>{{Row.Cluster}}</div>
+							<a class="marks-preview">{{Row.DefaultMark*Row.selQuestions}} Marks</a>
+							</div>
+						<ul>
+							<li class="item-li {{Row['Questions'].indexOf(item)>=Row.selQuestions ? 'remove':''}}" ng-repeat="item in Row['Questions']">
+								<table><tbody>
+									<tr>
+										<!--<td valign="top" width="20"><div class='number'>{{Row['Questions'].indexOf(item)+1}}.</div></td>-->
+										<td>
+										    <div class="question"><pre>{{item['Question']}}</pre></div>
+											<div class="answer"><pre>Answer:{{item['Answer']}}</pre></div>	
+											<img width="500" style="margin-bottom:14px display:{{item['Answer(OptionImage)']==null?'none':'block'}}" ng-show="item['Answer(OptionImage)']!=null" src="Answerimages/{{item['Answer(OptionImage)']}}">									
+										</td>
+									</tr>
+								</tbody></table>
+							</li>
+						</ul>
+					</li>
+				</ul>
+	    	</div>
+	    </div>
+    </div>
+    <div class="question-preview editablePreview">
+	
+	<div class="content-scroll">
+	
+		<div class="question-preview-tools">
+			<button id="save" ng-click="openSaveNewPopup()" ></button>
+			<button id="print"  ng-click="printDiv('printable')"></button>
+			<button id="printans" ng-click="printAns('accessable')"></button>
+			<button id="logoFileButton"></button>
+			<input id="logoFile" type="file">
+    	<button id="questionspacing"></button><input id="questionPadding" class="spinner" min="0" max="9" type='number' style="position:fixed; float:left; left:30px; top:436px; width:30px; height:20px;" ng-model="questionPadding" >
+		
+    		
+		</div>
+		<div class="printable">
+	    	<div class="question-preview-holder" >
+	    		<div class="question-preview-header">
+	    			<img class='questionPaperlogoImage' id='question-paper-edit-logo' src="Image/School-logo.png">
+					<input class='titleText edittableTitle' ng-model='SchoolName' type="text" placeholder='School Name'>
+	    		</div>
+	    		<ul>
+					<li class='group-li' ng-repeat="Row in sellectedArr" my-repeat-directive>
+						<div class="label">
+							<textarea class='edit-text-preview' onkeyup="textAreaAdjust(this)" ng-model='Row.Cluster'></textarea>
+							<a class="marks">{{Row.DefaultMark*Row.selQuestions}} Marks</a>
+						</div>
+						<ul>
+							<li style="padding-top:{{questionPadding}}px ;padding-bottom:{{questionPadding}}px;" class="item-li {{Row['Questions'].indexOf(item)>=Row.selQuestions ? 'remove':''}}" ng-repeat="item in Row['Questions']" my-repeat-directive>
+								<table><tbody>
+									<tr>
+										<!--<td valign="top" width="10" style="position:relative; left:-3px;"><div class='number'>{{Row['Questions'].indexOf(item)+1}}.</div></td>-->
+										<td>
+											<textarea class='edit-text-preview' onkeyup="textAreaAdjust(this)" ng-model="item['Question']"></textarea>
+											<img width="500" style="margin-top:14px" ng-show="item['OptionImage']!=null" src="QuestionImages/{{item['OptionImage']}}">												
+											
+										</td>
+									</tr>
+								</tbody></table>
+							</li>
+						</ul>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	
+	</div>
+	<div class="footer">
+
+	</div>
+<script src="Script/jquery.js"></script>
+<script src="Script/jquery.noty.packaged.min.js"></script>
+<script src="data/MST1.js"></script>
+<script src="Script/main.min.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,48 @@
+@charset "utf-8";
+/* CSS Document */
+#save {
+    width: 105px;
+    height: 80px;
+	display: block;
+    background: url(../Image/icons.png) -5px -5px;
+	position: fixed;
+	float:left;
+	float:top;
+	left:0px;
+	top:180px;
+}
+
+#print {
+    width: 105px;
+    height: 80px;
+	display: block;
+    background: url(../Image/icons.png) -5px -85px;
+	position: fixed;
+	float: left;
+	float:top;
+	left: 0px;
+	top:260px;
+}
+
+#logoFileButton {
+    width: 105px;
+    height: 80px;
+	display: block;
+    background: url(../Image/icons.png) -5px -245px;
+	position: fixed;
+	float:left;
+	float:top;
+	left: 0px;
+	top:340px;
+}
+#questionspacing {
+    width: 105px;
+    height: 80px;
+	display: block;
+    background: url(../Image/icons.png) -5px -325px;
+	position: fixed;
+	float:left;
+	float:top;
+	left: 0px;
+	top:420px;
+}
